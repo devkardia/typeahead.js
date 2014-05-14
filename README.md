@@ -6,7 +6,18 @@
 =======================
 
 This is a fork to allow multiple inserts into a single input box.  Simply add multiple: true to the options passed
-to $(.typeahead).typeahead();
+to
+
+$('.typeahead').typeahead(
+    {
+    ...
+    multiple: true
+    ...
+    },
+    {
+    ...
+    }
+);
 
 Inspired by [twitter.com]'s autocomplete search functionality, typeahead.js is
 a flexible JavaScript library that provides a strong foundation for building
