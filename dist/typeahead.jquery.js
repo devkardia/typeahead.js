@@ -433,10 +433,11 @@
             },
             _checkInputValue: function checkInputValue() {
                 var inputValue, areEquivalent, hasDifferentWhitespace;
-                inputValue = this.getInputValue();
+                inputValue = this.getInputValue(this.multiple);
                 areEquivalent = areQueriesEquivalent(inputValue, this.query);
                 hasDifferentWhitespace = areEquivalent ? this.query.length !== inputValue.length : false;
                 if (!areEquivalent) {
+                    inputValue = this.multiple ? this.getInputValue() : inputValue;
                     this.trigger("queryChanged", this.query = inputValue);
                 } else if (hasDifferentWhitespace) {
                     this.trigger("whitespaceChanged", this.query);
@@ -454,10 +455,29 @@
             setQuery: function setQuery(query) {
                 this.query = query;
             },
-            getInputValue: function getInputValue() {
-                return this.$input.val();
+            getInputValue: function getInputValue(getFull) {
+                if (!this.multiple) {
+                    return this.$input.val();
+                } else {
+                    if (getFull) {
+                        return this.$input.val();
+                    } else {
+                        var value = this.$input.val();
+                        var array = value.split(" ");
+                        var last = array[array.length - 1];
+                        return last;
+                    }
+                }
             },
             setInputValue: function setInputValue(value, silent) {
+                if (this.multiple) {
+                    var existing = this.$input.val();
+                    var array = existing.split(" ");
+                    if (array.length > 1) {
+                        array.pop();
+                        value = array.join(" ") + " " + value;
+                    }
+                }
                 this.$input.val(value);
                 silent ? this.clearHint() : this._checkInputValue();
             },
@@ -465,9 +485,24 @@
                 this.setInputValue(this.query, true);
             },
             getHint: function getHint() {
-                return this.$hint.val();
+                if (this.multiple) {
+                    var value = this.$hint.val();
+                    var array = value.split(" ");
+                    var last = array[array.length - 1];
+                    return last;
+                } else {
+                    return this.$hint.val();
+                }
             },
             setHint: function setHint(value) {
+                if (this.multiple) {
+                    var existing = this.$input.val();
+                    var array = existing.split(" ");
+                    if (array.length > 1) {
+                        array.pop();
+                        value = array.join(" ") + " " + value;
+                    }
+                }
                 this.$hint.val(value);
             },
             clearHint: function clearHint() {
@@ -550,6 +585,7 @@
             this.source = o.source;
             this.displayFn = getDisplayFn(o.display || o.displayKey);
             this.templates = getTemplates(o.templates, this.displayFn);
+            this.multiple = o.multiple || false;
             this.$el = $(html.dataset.replace("%CLASS%", this.name));
         }
         Dataset.extractDatasetName = function extractDatasetName(el) {

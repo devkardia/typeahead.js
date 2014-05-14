@@ -34,7 +34,7 @@ var Input = (function() {
     onFocus = _.bind(this._onFocus, this);
     onKeydown = _.bind(this._onKeydown, this);
     onInput = _.bind(this._onInput, this);
-
+    this.multiple = o.multiple;
     this.$hint = $(o.hint);
     this.$input = $(o.input)
     .on('blur.tt', onBlur)
@@ -156,12 +156,14 @@ var Input = (function() {
     _checkInputValue: function checkInputValue() {
       var inputValue, areEquivalent, hasDifferentWhitespace;
 
-      inputValue = this.getInputValue();
+      inputValue = this.getInputValue(this.multiple);
       areEquivalent = areQueriesEquivalent(inputValue, this.query);
       hasDifferentWhitespace = areEquivalent ?
         this.query.length !== inputValue.length : false;
 
       if (!areEquivalent) {
+        //set the query to the last word
+        inputValue = (this.multiple) ? this.getInputValue() : inputValue;
         this.trigger('queryChanged', this.query = inputValue);
       }
 
@@ -188,12 +190,33 @@ var Input = (function() {
       this.query = query;
     },
 
-    getInputValue: function getInputValue() {
-      return this.$input.val();
+    getInputValue: function getInputValue(getFull) {
+      if (!this.multiple) {
+          //always return full as it doesn't matter
+          return this.$input.val();
+      } else {
+          if (getFull) {
+              return this.$input.val();
+          } else {
+              var value = this.$input.val();
+              var array = value.split(" ");
+              var last = array[array.length - 1];
+              return last;
+          }
+      }
     },
 
     setInputValue: function setInputValue(value, silent) {
-      this.$input.val(value);
+        if (this.multiple) {
+            //append the result
+            var existing = this.$input.val();
+            var array = existing.split(" ");
+            if (array.length > 1) {
+                array.pop();
+                value = array.join(' ') + ' ' + value;
+            }
+        }
+        this.$input.val(value);
 
       // silent prevents any additional events from being triggered
       silent ? this.clearHint() : this._checkInputValue();
@@ -204,11 +227,27 @@ var Input = (function() {
     },
 
     getHint: function getHint() {
-      return this.$hint.val();
+        if (this.multiple) {
+            var value = this.$hint.val();
+            var array = value.split(" ");
+            var last  = array[array.length-1];
+            return last;
+        } else {
+            return this.$hint.val();
+        }
     },
 
     setHint: function setHint(value) {
-      this.$hint.val(value);
+        if (this.multiple) {
+            //realign hint
+            var existing = this.$input.val();
+            var array = existing.split(" ");
+            if (array.length > 1) {
+                array.pop();
+                value = array.join(' ') + ' ' + value;
+            }
+        }
+        this.$hint.val(value);
     },
 
     clearHint: function clearHint() {

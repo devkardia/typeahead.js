@@ -36,6 +36,7 @@
           withHint: _.isUndefined(o.hint) ? true : !!o.hint,
           minLength: o.minLength,
           autoselect: o.autoselect,
+          multiple: o.multiple,
           datasets: datasets
         });
 

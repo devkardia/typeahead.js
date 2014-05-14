@@ -922,6 +922,7 @@
             onFocus = _.bind(this._onFocus, this);
             onKeydown = _.bind(this._onKeydown, this);
             onInput = _.bind(this._onInput, this);
+            this.multiple = o.multiple;
             this.$hint = $(o.hint);
             this.$input = $(o.input).on("blur.tt", onBlur).on("focus.tt", onFocus).on("keydown.tt", onKeydown);
             if (this.$hint.length === 0) {
@@ -964,40 +965,41 @@
             _managePreventDefault: function managePreventDefault(keyName, $e) {
                 var preventDefault, hintValue, inputValue;
                 switch (keyName) {
-                  case "tab":
-                    hintValue = this.getHint();
-                    inputValue = this.getInputValue();
-                    preventDefault = hintValue && hintValue !== inputValue && !withModifier($e);
-                    break;
+                    case "tab":
+                        hintValue = this.getHint();
+                        inputValue = this.getInputValue();
+                        preventDefault = hintValue && hintValue !== inputValue && !withModifier($e);
+                        break;
 
-                  case "up":
-                  case "down":
-                    preventDefault = !withModifier($e);
-                    break;
+                    case "up":
+                    case "down":
+                        preventDefault = !withModifier($e);
+                        break;
 
-                  default:
-                    preventDefault = false;
+                    default:
+                        preventDefault = false;
                 }
                 preventDefault && $e.preventDefault();
             },
             _shouldTrigger: function shouldTrigger(keyName, $e) {
                 var trigger;
                 switch (keyName) {
-                  case "tab":
-                    trigger = !withModifier($e);
-                    break;
+                    case "tab":
+                        trigger = !withModifier($e);
+                        break;
 
-                  default:
-                    trigger = true;
+                    default:
+                        trigger = true;
                 }
                 return trigger;
             },
             _checkInputValue: function checkInputValue() {
                 var inputValue, areEquivalent, hasDifferentWhitespace;
-                inputValue = this.getInputValue();
+                inputValue = this.getInputValue(this.multiple);
                 areEquivalent = areQueriesEquivalent(inputValue, this.query);
                 hasDifferentWhitespace = areEquivalent ? this.query.length !== inputValue.length : false;
                 if (!areEquivalent) {
+                    inputValue = this.multiple ? this.getInputValue() : inputValue;
                     this.trigger("queryChanged", this.query = inputValue);
                 } else if (hasDifferentWhitespace) {
                     this.trigger("whitespaceChanged", this.query);
@@ -1015,10 +1017,29 @@
             setQuery: function setQuery(query) {
                 this.query = query;
             },
-            getInputValue: function getInputValue() {
-                return this.$input.val();
+            getInputValue: function getInputValue(getFull) {
+                if (!this.multiple) {
+                    return this.$input.val();
+                } else {
+                    if (getFull) {
+                        return this.$input.val();
+                    } else {
+                        var value = this.$input.val();
+                        var array = value.split(" ");
+                        var last = array[array.length - 1];
+                        return last;
+                    }
+                }
             },
             setInputValue: function setInputValue(value, silent) {
+                if (this.multiple) {
+                    var existing = this.$input.val();
+                    var array = existing.split(" ");
+                    if (array.length > 1) {
+                        array.pop();
+                        value = array.join(" ") + " " + value;
+                    }
+                }
                 this.$input.val(value);
                 silent ? this.clearHint() : this._checkInputValue();
             },
@@ -1026,9 +1047,24 @@
                 this.setInputValue(this.query, true);
             },
             getHint: function getHint() {
-                return this.$hint.val();
+                if (this.multiple) {
+                    var value = this.$hint.val();
+                    var array = value.split(" ");
+                    var last = array[array.length - 1];
+                    return last;
+                } else {
+                    return this.$hint.val();
+                }
             },
             setHint: function setHint(value) {
+                if (this.multiple) {
+                    var existing = this.$input.val();
+                    var array = existing.split(" ");
+                    if (array.length > 1) {
+                        array.pop();
+                        value = array.join(" ") + " " + value;
+                    }
+                }
                 this.$hint.val(value);
             },
             clearHint: function clearHint() {
@@ -1396,6 +1432,7 @@
             this.isActivated = false;
             this.autoselect = !!o.autoselect;
             this.minLength = _.isNumber(o.minLength) ? o.minLength : 1;
+            this.multiple = o.multiple || false;
             this.$node = buildDomStructure(o.input, o.withHint);
             $menu = this.$node.find(".tt-dropdown-menu");
             $input = this.$node.find(".tt-input");
@@ -1425,7 +1462,8 @@
             }).onSync("suggestionClicked", this._onSuggestionClicked, this).onSync("cursorMoved", this._onCursorMoved, this).onSync("cursorRemoved", this._onCursorRemoved, this).onSync("opened", this._onOpened, this).onSync("closed", this._onClosed, this).onAsync("datasetRendered", this._onDatasetRendered, this);
             this.input = new Input({
                 input: $input,
-                hint: $hint
+                hint: $hint,
+                multiple: this.multiple
             }).onSync("focused", this._onFocused, this).onSync("blurred", this._onBlurred, this).onSync("enterKeyed", this._onEnterKeyed, this).onSync("tabKeyed", this._onTabKeyed, this).onSync("escKeyed", this._onEscKeyed, this).onSync("upKeyed", this._onUpKeyed, this).onSync("downKeyed", this._onDownKeyed, this).onSync("leftKeyed", this._onLeftKeyed, this).onSync("rightKeyed", this._onRightKeyed, this).onSync("queryChanged", this._onQueryChanged, this).onSync("whitespaceChanged", this._onWhitespaceChanged, this);
             this._setLanguageDirection();
         }
@@ -1651,6 +1689,7 @@
                         withHint: _.isUndefined(o.hint) ? true : !!o.hint,
                         minLength: o.minLength,
                         autoselect: o.autoselect,
+                        multiple: o.multiple,
                         datasets: datasets
                     });
                     $input.data(typeaheadKey, typeahead);

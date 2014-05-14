@@ -33,6 +33,8 @@ var Dataset = (function() {
 
     this.templates = getTemplates(o.templates, this.displayFn);
 
+    this.multiple = o.multiple || false;
+
     this.$el = $(html.dataset.replace('%CLASS%', this.name));
   }
 
